@@ -1,0 +1,17 @@
+{
+  "appenders": [
+    {
+      "type": "console"
+    },
+    {
+      "type": "file",
+      "filename": "logs/abc.log",
+      "maxLogSize": 20480,
+      "backups": 15
+    }
+  ],
+  "levels": {
+    "default":"debug"
+  },
+  "replaceConsole": false
+}

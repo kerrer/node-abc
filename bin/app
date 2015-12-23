@@ -1,0 +1,175 @@
+#!/usr/bin/env node
+var fs =  require('fs'),
+    path = require('path'),
+	S = require('string'),
+	grunt = require('grunt'),
+    watch = require('watch');
+var program = require('commander');
+var forever = require('forever');
+var detect = require('detect-port');
+var  ip = require('ip');
+
+var env = process.env.NODE_ENV = process.env.NODE_ENV || "development";
+process.env.CONF_DIR= path.resolve(env === "production" ?  __dirname + "/../services" : __dirname + "/../target/services" );
+process.env.SVR_DIR = path.resolve(env === "production" ?  __dirname + "/../services" : __dirname + "/../target/services" );
+
+program
+  .version('0.0.1')
+  .option('-p, --port [port]', '服务运行端口','5004')
+  .option('-h, --host [host]', '服务绑定的ip地址',ip.address())
+  .option('-eh, --etcd_host [etcd_host]', '注册中心ip地址','127.0.0.1')
+  .option('-ep, --etcd_port [etcd_port]', '注册中心连接端口','4001')
+  .option('-d, --deamon', 'Add bbq sauce')
+  .option('-c, --cheese [type]', 'Add the specified type of cheese [marble]', 'marble')
+  .parse(process.argv);
+
+fs.readFile('package.json', function (err, data) {
+		if (err) throw err;
+		var pkg= JSON.parse(data);		
+		process.env.NODE_ENV === "development" && pkg.autobuild  ? watch_build() : start(pkg.name);
+				
+});
+
+function watch_build(){
+    var fork = require('child_process').fork, grunt_child;
+	grunt_child = fork(__dirname+'/grunt.js');
+	grunt_child.on('message',function(obj){
+		if(obj.type && obj.type==='grunt'){
+			if(obj.data && obj.data==="start"){
+				start();
+			}else if(obj.data && obj.data==="reload"){
+				reload();
+			}
+		}
+	});
+	grunt_child.send({type:'main',data:'newbuild'});
+
+	watch.watchTree('./src', function (f, curr, prev) {
+		if (typeof f == "object" && prev === null && curr === null) {
+			console.log("watching.........................");
+		} else if (prev === null) {
+			// f is a new file
+			rebuild(f);
+		} else if (curr.nlink === 0) {
+			// f was removed
+			rebuild(f);
+		} else {
+			// f was changed
+			rebuild(f);
+		}
+	});	
+}
+
+function rebuild(file){
+    if(S(file).startsWith("src/test")){
+		  grunt_child.send({type:'test',data:'rebuild'});
+	}else{
+		  grunt_child.send({type:'main',data:'rebuild'});
+	}
+}
+
+function start(name){	
+	var port= program.port;
+	detect(port, function(error, _port) {		
+		if (port === _port) {
+			console.log("使用注册中心:",program.etcd_host,program.etcd_port);		
+			if(process.env.pmx){
+				require('services')(program.etcd_port,program.etcd_host).server(program.port,program.host).start(name,true);	
+		    }else if(program.deamon){						   
+				process.env.port = program.port;
+				process.env.host = program.host;
+				process.env.etcd_host = program.etcd_host;
+				process.env.etcd_port = program.etcd_port;
+				process.env.project_name = name;
+				forever.startDaemon(__dirname+'/services.js'); 
+			}else{
+			   run_cli();
+			   require('services')(program.etcd_port,program.etcd_host).server(program.port,program.host).start(name);
+			}               
+		}else{
+			console.log(error);
+			console.log('port: %d was occupied, try port: %d', port, _port);
+			//reject(false);
+		}//else
+	});//detect
+}
+
+function stop(){
+   setTimeout(function() {
+     Service.stop();	
+   }, 3000);      
+}
+
+function reload(){
+  Service.reload();		
+}
+
+function restart(){
+   console.log("restart services................");
+   setTimeout(function() {
+      Service.restart();	
+   }, 1000);     
+}
+
+function exit(n){
+	 setTimeout(function(){
+        process.exit();
+     }, n);
+}
+
+function normalizePort(val) {
+	  var port = parseInt(val, 10);
+	  if (isNaN(port)) {
+	    // named pipe
+	    //return val;
+	    return false;
+	  }
+
+	  if (port >= 0) {
+	    // port number
+	    return port;
+	  }
+	  return false;
+}
+
+function run_cli(){
+	process.on('uncaughtException', function(err) {
+		console.log('Caught exception: ' + err.message,err.stack);
+	});
+	
+	process.on('exit', function(code) {
+		// do *NOT* do this
+		setTimeout(function() {
+			console.log('This will not run');
+		}, 0);
+		console.log('app start About to exit with code:', code);
+	});
+	
+	var unhandledRejections = new Map();
+	process.on('unhandledRejection', function(reason, p) {
+		console.log("unhandledRejection");
+		unhandledRejections.set(p, reason);
+	});
+	
+	process.on('rejectionHandled', function(p) {
+		console.log("rejectionHandled");
+		unhandledRejections.delete(p);
+	});
+	
+	if (process.platform === "win32") {
+		var rl = require("readline").createInterface({
+			input: process.stdin,
+			output: process.stdout
+		});
+
+		rl.on("SIGINT", function () {
+			process.emit("SIGINT");
+		});
+	}
+
+	process.on("SIGINT", function () {
+	//graceful shutdown
+		console.log('shutdown');
+		process.exit();
+	});
+}
