@@ -1,7 +1,7 @@
 /**
- * This class requires the modules  and
- * @module service_act  
+ * New node file
  */
+var db = require('node-db')().connect();
 
 /**
  * Represents a book.
@@ -9,7 +9,6 @@
  * @service trans
  * @author TFC<maxkerrer@126.com> 
  * @param {string} s - The title of the book.
- * @returns {string}  the uppper string.
  */
 function transform(s) {
        return s.replace(/[aeiou]{2,}/, 'oo').toUpperCase();
@@ -18,9 +17,8 @@ function transform(s) {
 /**
  * Represents a book.
  * 
- * @service  maxkerrer
+ * @service
  * @author TFC<maxkerrer@126.com> 
- * @returns {string}  the uppper string.
  */
 function transformEmpty() {
        return "hello world".replace(/[aeiou]{2,}/, 'oo').toUpperCase();
@@ -29,26 +27,23 @@ function transformEmpty() {
 /**
  * 获取医生列表资源
  * 
- * @service getHostList
+ * @service
  * @author TFC<maxkerrer@126.com> 
  * @param {int} limit - 查询数量.
- * @param {callback} cb - 回调方法
- * @returns {string}  the uppper string.
+ * @param {callback} fun - 回调方法
  */
-function getHostList(limit,cb){ 
+function getHostList(limit,fun){
+	    console.log(limit);
 	    var num =  typeof limit !=="undefined" ? parseInt(limit) : 5;
     	new db.Hospital()
     	.query(function(qb){
     		qb.orderBy("id","DESC").limit(num);
     	})
     	.fetchAll().then(function(host) {
-			if(1){
-				//cb(Err.QueryInvalideParams(40004,"参数错误"));
-				
-			}			
-    		cb(null,host.toJSON());    		 
+			console.log(host.toJSON());
+    		fun(host.toJSON());    		 
     	}).catch(function(err) {
-    		throw err;
+    		  console.error(err);
     	});
 }
 
@@ -59,20 +54,21 @@ function getHostList(limit,cb){
  * @author TFC<maxkerrer@126.com> 
  * @param {int} id - 医生id.
  * @param {string} fg - The author of the book.
- * @param {callback} cb - 回调方法
+ * @param {callback} fun - 回调方法
  */
-function getHostInfo(id,fg,cb){
+function getHostInfo(id,fg,fun){
 	     if( typeof id ==="undefined" ){
 	    	 console.error("not id");
-	    	 throw new Error("not id");
+	    	 
+	    	 return null;
 	     }
 	    id=  parseInt(id);
     	new db.Hospital()
     	.where({id: id})
     	.fetch().then(function(data) {
-    		cb(null,data.toJSON());    		 
+    		fun(data.toJSON());    		 
     	}).catch(function(err) {
-    		throw err;
+    		  console.error(err);
     	});
 }
 

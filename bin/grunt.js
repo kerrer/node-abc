@@ -3,9 +3,7 @@ var grunt = require('grunt');
 process.on('message',function(obj){
 	grunt.tasks(['default'],null,function(){
 		if(obj.type==="main"){
-			if(obj.data==="newbuild"){
-				 process.send({'type':'grunt','data':"start"});
-			}else if(obj.data==="rebuild"){
+			if(obj.data==="rebuild"){
 				 process.send({'type':'grunt','data':"reload"});
 			}
 		}else{
