@@ -1,7 +1,10 @@
 /**
- * This class requires the modules  and
+ * 这个模块的作用主要是模拟医院的获取列表和
  * 
- * @module service_act2
+ * @module demo.act2
+ * @requires db
+ * @requires Err
+ * @requires Promise
  */
 
 /**
@@ -36,3 +39,24 @@ function gethost2(fun){
     	});
 }
 
+/**
+ * Represents a book333333333333333.
+ * 
+ * @service gethost3333
+ * @promise
+ * @author Jane Smith 
+ * @param {int} limit 回调方法
+ */
+function gethostp(limit){
+	return   new Promise(function (resolve, reject){	
+    	new db.Hospital()
+    	.query(function(qb){
+    		qb.orderBy("id","DESC").limit(limit);
+    	})
+    	.fetchAll().then(function(host) {
+    		resolve(host);    		 
+    	}).catch(function(err) {
+    		reject(err);
+    	});
+    });
+}

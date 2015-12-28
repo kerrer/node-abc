@@ -1,8 +1,10 @@
 /**
- * New node file
- * 认证信息接口
+ * This class requires the modules  and
+ * 
+ * no modi
+ * 
+ * @module renzheng
  */
-var db = require('node-db')().connect();
 var public_fun = require("./public_fun.js");
 
 /**

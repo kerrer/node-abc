@@ -1,8 +1,9 @@
 /**
- * New node file
- * 省份接口
+ * This class requires the modules  and
+ * 
+ * no modi
+ * @module region
  */
-var db = require('node-db')().connect();
 var public_fun = require("./public_fun.js");
 
 /**

@@ -1,8 +1,9 @@
 /**
- * New node file
- * 医院接口
+ * This class requires the modules  and
+ * 
+ * no modi
+ * @module hospital
  */
-var db = require('node-db')().connect();
 var public_fun = require("./public_fun.js");
 
 /**

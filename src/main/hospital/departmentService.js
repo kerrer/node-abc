@@ -1,8 +1,9 @@
 /**
- * New node file
- * 科室信息接口
+ * This class requires the modules  and
+ * 
+ * @module department
  */
-var db = require('node-db')().connect();
+
 var public_fun = require("./public_fun.js");
 
 
@@ -12,9 +13,9 @@ var public_fun = require("./public_fun.js");
  * @service
  * @author YIYI
  * @param {string} arrData -密钥
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function getHospitalDepartment(arrData,fun){
+function getHospitalDepartment(arrData,cb){
 	arrData = JSON.parse(arrData);
     //验证接口是否授权，密钥等信息
     var res = {};
@@ -31,8 +32,7 @@ function getHospitalDepartment(arrData,fun){
 		
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+       return cb(null,JSON.stringify(res));
     }
 	
     page = parseInt(page || 1);
@@ -44,8 +44,7 @@ function getHospitalDepartment(arrData,fun){
     hospital_id = parseInt(hospital_id || 0);
     if(hospital_id == 0){
         res = {"code":40004,"msg":"缺少医院id"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     var where = " hospital_id = "+hospital_id;
     if(department_one){
@@ -93,15 +92,15 @@ function getHospitalDepartment(arrData,fun){
                 if(rows.length > 0){
                     console.log(rows);
                     res = {"code":40000,"msg":"成功","count":count,"pageTotal":pageTotal,"data":rows};
-                    fun(JSON.stringify(res));
+                    return cb(null,JSON.stringify(res));
                 }else{
                     res = {"code":40001,"msg":"没有数据"};
-                    fun(JSON.stringify(res));
+                    return cb(null,JSON.stringify(res));
                 }
             });
         }else{
             res = {"code":40001,"msg":"没有数据"};
-            fun(JSON.stringify(res));
+            return cb(null,JSON.stringify(res));
         }
     });
     console.log(new Date().getTime());
@@ -113,9 +112,9 @@ function getHospitalDepartment(arrData,fun){
  * @service
  * @author YIYI
  * @param {string} arrData -密钥
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function getHospitalDepartmentOne(arrData,fun){
+function getHospitalDepartmentOne(arrData,cb){
     arrData = JSON.parse(arrData);
     //验证接口是否授权，密钥等信息
     var res = {};
@@ -124,15 +123,13 @@ function getHospitalDepartmentOne(arrData,fun){
 
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 
     hospital_id = parseInt(hospital_id || 0);
     if(hospital_id == 0){
         res = {"code":40004,"msg":"缺少医院id"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     var where = " hospital_id = "+hospital_id;
         where += " AND is_show = '1'" ;
@@ -142,10 +139,10 @@ function getHospitalDepartmentOne(arrData,fun){
             if(rows.length > 0){
                 //console.log(rows);
                 res = {"code":40000,"msg":"成功","data":rows};
-                fun(JSON.stringify(res));
+                return cb(null,JSON.stringify(res));
             }else{
                 res = {"code":40001,"msg":"没有数据"};
-                fun(JSON.stringify(res));
+                return cb(null,JSON.stringify(res));
             }
         });
 }
@@ -156,9 +153,9 @@ function getHospitalDepartmentOne(arrData,fun){
  * @service
  * @author YIYI
  * @param {string} arrData -密钥
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function getHospitalDepartmentInfo(arrData,fun){
+function getHospitalDepartmentInfo(arrData,cb){
     //验证接口是否授权，密钥等信息
     var res = {};
 	arrData = JSON.parse(arrData);
@@ -169,16 +166,14 @@ function getHospitalDepartmentInfo(arrData,fun){
 	
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 	
 	
     hospital_department_id = parseInt(hospital_department_id || 0);
     if(hospital_department_id == 0){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 
     var where = "id="+hospital_department_id;
@@ -208,10 +203,10 @@ function getHospitalDepartmentInfo(arrData,fun){
         if(rows.length > 0){
             console.log(rows);
             res = {"code":40000,"msg":"成功","data":rows};
-            fun(JSON.stringify(res));
+            return cb(null,JSON.stringify(res));
         }else{
             res = {"code":40001,"msg":"没有数据"};
-            fun(JSON.stringify(res));
+            return cb(null,JSON.stringify(res));
         }
     });
     console.log(new Date().getTime());
@@ -222,9 +217,9 @@ function getHospitalDepartmentInfo(arrData,fun){
  * @service
  * @author YIYI
  * @param {string} arrData -密钥
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function addHospitalDepartment(arrData,fun){
+function addHospitalDepartment(arrData,cb){
     //验证接口是否授权，密钥等信息
     var res = {};
 	
@@ -250,8 +245,7 @@ function addHospitalDepartment(arrData,fun){
 	
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 
     //arrData = arrData || {};
@@ -259,20 +253,17 @@ function addHospitalDepartment(arrData,fun){
     saveArr.hospital_id = parseInt(hospital_id || 0);
     if(hospital_id == 0){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     saveArr.department_one = department_one || "";
     if(department_one == 0){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     saveArr.department_two = department_two || "";
     if(department_two == 0){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     saveArr.addtime = public_fun.getTimeStamp();//添加时间
     saveArr.edittime = public_fun.getTimeStamp();//修改时间
@@ -285,8 +276,7 @@ function addHospitalDepartment(arrData,fun){
         data = data.toJSON();
         if(data.length > 0){
             res = {"code":40003,"msg":"科室已存在"};
-            fun(JSON.stringify(res));
-            return false;
+            return cb(null,JSON.stringify(res));
         }else{
             new db.HospitalDepartment(saveArr).save().then(function(model) {
                 var hd_data = model.toJSON();
@@ -296,7 +286,7 @@ function addHospitalDepartment(arrData,fun){
                 }else{
                     res = {"code":40010,"msg":"失败"};
                 }
-                fun(JSON.stringify(res));
+                return cb(null,JSON.stringify(res));
             });
         }
     });
@@ -308,9 +298,9 @@ function addHospitalDepartment(arrData,fun){
  * @service
  * @author YIYI
  * @param {string} arrData -密钥
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function editHospitalDepartment(arrData,fun){
+function editHospitalDepartment(arrData,cb){
     //验证接口是否授权，密钥等信息
     var res = {};
 	arrData = JSON.parse(arrData);
@@ -337,8 +327,7 @@ function editHospitalDepartment(arrData,fun){
 	
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 
     //arrData = arrData || {};
@@ -347,13 +336,11 @@ function editHospitalDepartment(arrData,fun){
 
     if(hospital_department_id == 0){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     if(!hospital_id || !department_one || !department_two){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     saveArr.edittime = public_fun.getTimeStamp();//修改时间
 
@@ -366,8 +353,7 @@ function editHospitalDepartment(arrData,fun){
         data = data.toJSON();
         if(data.length > 0){
             res = {"code":40003,"msg":"科室已存在"};
-            fun(JSON.stringify(res));
-            return false;
+            return cb(null,JSON.stringify(res));
         }else{
             new db.HospitalDepartment({id:hospital_department_id}).save(saveArr, {patch: true}).then(function(model) {
                 var data = model.toJSON();
@@ -377,7 +363,7 @@ function editHospitalDepartment(arrData,fun){
                 }else{
                     res = {"code":40010,"msg":"失败"};
                 }
-                fun(JSON.stringify(res));
+                return cb(null,JSON.stringify(res));
             });
         }
     });

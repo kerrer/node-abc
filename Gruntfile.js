@@ -4,7 +4,7 @@ module.exports = function(grunt) {
     jshint: {
         all: [
           'Gruntfile.js',
-          'src/**/*.js'
+          'src/**/*.js1'
         ]
     },
     clean: {
@@ -15,7 +15,7 @@ module.exports = function(grunt) {
     },
     jsdoc : {
         dist : {
-            src: ['src/main/*.js', 'src/test/*.js'],
+            src: ['src/main/**/*.js', 'src/test/**/*.js'],
             options: {
                 destination : 'target/out/doc',
                 template : "node_modules/ink-docstrap/template",

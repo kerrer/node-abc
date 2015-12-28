@@ -1,8 +1,9 @@
 /**
- * New node file
- * 职称信息接口
+ * This class requires the modules  and
+ * 
+ * no modi
+ * @module title
  */
-var db = require('node-db')().connect();
 var public_fun = require("./public_fun.js");
 
 

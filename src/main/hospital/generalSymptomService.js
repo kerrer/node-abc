@@ -1,8 +1,10 @@
 /**
- * New node file
- * 医享网通用症状接口
+ * This class requires the modules  and
+ * 
+ * no modi
+ * @module generalSymptom
  */
-var db = require('node-db')().connect();
+ 
 var public_fun = require("./public_fun.js");
 
 /**

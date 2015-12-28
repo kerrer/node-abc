@@ -1,6 +1,10 @@
 /**
  * This class requires the modules  and
- * @module service_act  
+ * 
+ * @module demo.act  
+ * @requires db
+ * @requires Err
+ * @requires Promise
  */
 
 /**

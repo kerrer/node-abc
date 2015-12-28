@@ -1,8 +1,9 @@
 /**
- * New node file
- * 疾病信息接口
+ * This class requires the modules  and
+ * 
+ * @module disease
  */
-var db = require('node-db')().connect();
+
 var public_fun = require("./public_fun.js");
 
 
@@ -12,15 +13,14 @@ var public_fun = require("./public_fun.js");
  * @service
  * @author zhoujf
  * @param {json} arrData -传递的参数，json字符串形式
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function getDiseaseList(arrData,fun){
+function getDiseaseList(arrData,cb){
     arrData = JSON.parse(arrData);
     arrData = arrData || {};
     if(public_fun.isEmptyObject(arrData)){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     var secret = arrData.secret,page = arrData.page,pageCount=arrData.pageCount,requestData=arrData.requestData;
     
@@ -28,8 +28,7 @@ function getDiseaseList(arrData,fun){
     var res = {};
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 
     page = parseInt(page || 1);
@@ -121,15 +120,15 @@ function getDiseaseList(arrData,fun){
                         return v;
                     });
                     res = {"code":40000,"msg":"成功","count":count,"pageTotal":pageTotal,"data":show_data};
-                    fun(JSON.stringify(res));
+                    return cb(null,JSON.stringify(res));
                 }else{
                     res = {"code":40001,"msg":"没有数据","data":data};
-                    fun(JSON.stringify(res));
+                    return cb(null,JSON.stringify(res));
                 }
             });
         }else{
             res = {"code":40001,"msg":"没有数据"};
-            fun(JSON.stringify(res));
+            return cb(null,JSON.stringify(res));
         }
 	});
     console.log(new Date().getTime());
@@ -141,15 +140,14 @@ function getDiseaseList(arrData,fun){
  * @service
  * @author zhoujf
  * @param {json} arrData -传递的参数，json字符串形式
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function getDiseaseInfo(arrData,fun){
+function getDiseaseInfo(arrData,cb){
     arrData = JSON.parse(arrData);
     arrData = arrData || {};
     if(public_fun.isEmptyObject(arrData)){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     var secret = arrData.secret,disease_id = arrData.id,requestData=arrData.requestData;
 
@@ -157,14 +155,12 @@ function getDiseaseInfo(arrData,fun){
     var res = {};
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     disease_id = parseInt(disease_id || 0);
     if(disease_id === 0){
         res = {"code":40004,"msg":"缺少参数"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 	var field = [],related_table=[];
     requestData = requestData || [];
@@ -211,10 +207,10 @@ function getDiseaseInfo(arrData,fun){
 			}
 			
 			res = {"code":40000,"msg":"成功","data":data};
-			fun(JSON.stringify(res));
+			return cb(null,JSON.stringify(res));
 		}else{
 			res = {"code":40001,"msg":"没有数据","data":data};
-			fun(JSON.stringify(res));
+			return cb(null,JSON.stringify(res));
 		}
 	});
     console.log(new Date().getTime());
@@ -226,15 +222,14 @@ function getDiseaseInfo(arrData,fun){
  * @service
  * @author zhoujf
  * @param {json} arrData -传递的参数，json字符串形式
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function addDisease(arrData,fun){
+function addDisease(arrData,cb){
     arrData = JSON.parse(arrData);
     arrData = arrData || {};
     if(public_fun.isEmptyObject(arrData)){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     var secret = arrData.secret;
     delete arrData.secret;
@@ -242,15 +237,13 @@ function addDisease(arrData,fun){
     var res = {};
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 
     arrData.disease_name = (arrData.disease_name || "").trim();
     if(arrData.disease_name == ""){
         res = {"code":40004,"msg":"缺少参数"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     arrData.addtime = public_fun.getTimeStamp();//添加时间
 
@@ -260,8 +253,7 @@ function addDisease(arrData,fun){
         data = data.toJSON();
         if(data.length > 0){
             res = {"code":40003,"msg":"疾病已存在"};
-            fun(JSON.stringify(res));
-            return false;
+            return cb(null,JSON.stringify(res));
         }else{
             new db.YxwGeneralDisease(arrData).save().then(function(model) {
                 var info = model.toJSON();
@@ -270,7 +262,7 @@ function addDisease(arrData,fun){
                 }else{
                     res = {"code":40010,"msg":"失败"};
                 }
-                fun(JSON.stringify(res));
+                return cb(null,JSON.stringify(res));
             });
         }
     });
@@ -282,15 +274,14 @@ function addDisease(arrData,fun){
  * @service
  * @author zhoujf
  * @param {json} arrData -传递的参数，json字符串形式
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function editDisease(arrData,fun){
+function editDisease(arrData,cb){
     arrData = JSON.parse(arrData);
     arrData = arrData || {};
     if(public_fun.isEmptyObject(arrData)){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     var secret = arrData.secret;
     delete arrData.secret;
@@ -298,22 +289,19 @@ function editDisease(arrData,fun){
     var res = {};
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 
     var disease_id = parseInt(arrData.id || 0);
     delete arrData.id;
     if(disease_id == 0){
         res = {"code":40004,"msg":"缺少参数"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     arrData.disease_name = (arrData.disease_name || "").trim();
     if(arrData.disease_name == ""){
         res = {"code":40004,"msg":"缺少参数"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 
     new db.YxwGeneralDisease().query(function(qb){
@@ -323,8 +311,7 @@ function editDisease(arrData,fun){
         data = data.toJSON();
         if(data.length > 0){
             res = {"code":40003,"msg":"疾病已存在"};
-            fun(JSON.stringify(res));
-            return false;
+            return cb(null,JSON.stringify(res));
         }else{
             new db.YxwGeneralDisease({id:disease_id}).save(arrData, {patch: true}).then(function(model) {
                 var info = model.toJSON();
@@ -333,7 +320,7 @@ function editDisease(arrData,fun){
                 }else{
                     res = {"code":40010,"msg":"失败"};
                 }
-                fun(JSON.stringify(res));
+                return cb(null,JSON.stringify(res));
             });
         }
     });
@@ -345,15 +332,14 @@ function editDisease(arrData,fun){
  * @service
  * @author zhoujf
  * @param {json} arrData -传递的参数，json字符串形式
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function getDiseaseExtra(arrData,fun){
+function getDiseaseExtra(arrData,cb){
     arrData = JSON.parse(arrData);
     arrData = arrData || {};
     if(public_fun.isEmptyObject(arrData)){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     var secret = arrData.secret,disease_id = arrData.disease_id,class1 = arrData.class1,class2 = arrData.class2;
 
@@ -361,8 +347,7 @@ function getDiseaseExtra(arrData,fun){
     var res = {};
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 	
     disease_id = parseInt(disease_id || 0);
@@ -370,8 +355,7 @@ function getDiseaseExtra(arrData,fun){
 	class2 = parseInt(class2 || 0);
     if(disease_id === 0 || class1 === 0){
         res = {"code":40004,"msg":"缺少参数"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 	
 	var field = ['id','disease_id','class_name','class2','class1','sort'];
@@ -430,15 +414,15 @@ function getDiseaseExtra(arrData,fun){
 			}
 			
 			res = {"code":40000,"msg":"成功","data":data};
-			fun(JSON.stringify(res));
+			return cb(null,JSON.stringify(res));
 		}else{
 			if(default_classes[class1] && !class2){
 				data = default_classes[class1];
 				res = {"code":40000,"msg":"成功","data":data};
-				fun(JSON.stringify(res));
+				return cb(null,JSON.stringify(res));
 			}else{
 				res = {"code":40001,"msg":"没有数据","data":data};
-				fun(JSON.stringify(res));
+				return cb(null,JSON.stringify(res));
 			}
 		}
 	});
@@ -451,15 +435,15 @@ function getDiseaseExtra(arrData,fun){
  * @service
  * @author zhoujf
  * @param {json} arrData -传递的参数，json字符串形式
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function delDisease(arrData,fun){
+function delDisease(arrData,cb){
     var res = {};
     arrData = JSON.parse(arrData);
     arrData = arrData || {};
     if(public_fun.isEmptyObject(arrData)){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
+        return cb(null,JSON.stringify(res));
     }
     var secret = arrData.secret;
     delete arrData.secret;
@@ -468,15 +452,13 @@ function delDisease(arrData,fun){
     //验证接口是否授权，密钥等信息
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 
     disease_id = (disease_id || "");
     if(disease_id === ""){
         res = {"code":40004,"msg":"缺少参数"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 	
     disease_id = disease_id.split(",");
@@ -498,7 +480,7 @@ function delDisease(arrData,fun){
 			}else{
 				res = {"code":40010,"msg":"失败"};
 			}
-			fun(JSON.stringify(res));
+			return cb(null,JSON.stringify(res));
 		});
 }
 
@@ -508,15 +490,14 @@ function delDisease(arrData,fun){
  * @service
  * @author zhoujf
  * @param {json} arrData -传递的参数，json字符串形式
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function editDiseaseExtra(arrData,fun){
+function editDiseaseExtra(arrData,cb){
     arrData = JSON.parse(arrData);
     arrData = arrData || {};
     if(public_fun.isEmptyObject(arrData)){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     var secret = arrData.secret;
     delete arrData.secret;
@@ -524,16 +505,14 @@ function editDiseaseExtra(arrData,fun){
     var res = {};
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 
     var id = parseInt(arrData.id || 0);
     delete arrData.id;
     if(id == 0){
         res = {"code":40004,"msg":"缺少参数"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     arrData.class_name = (arrData.class_name || "").trim();
 	arrData.disease_id = parseInt(arrData.disease_id || 0);
@@ -541,8 +520,7 @@ function editDiseaseExtra(arrData,fun){
 	arrData.class2 = parseInt(arrData.class2 || 0);
     if(arrData.class_name === "" || arrData.disease_id === 0 || arrData.class1 === 0 || arrData.class2 === 0){
         res = {"code":40004,"msg":"缺少参数"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 	arrData.content = (arrData.content || "").trim();
 	arrData.is_default = parseInt(arrData.is_default || 0);
@@ -558,8 +536,7 @@ function editDiseaseExtra(arrData,fun){
         data = data.toJSON();
         if(data.length > 0){
             res = {"code":40003,"msg":"栏目已存在"};
-            fun(JSON.stringify(res));
-            return false;
+            return cb(null,JSON.stringify(res));
         }else{
             new db.YxwGeneralDiseaseExtra({id:id}).save(arrData, {patch: true}).then(function(model) {
                 var info = model.toJSON();
@@ -568,7 +545,7 @@ function editDiseaseExtra(arrData,fun){
                 }else{
                     res = {"code":40010,"msg":"失败"};
                 }
-                fun(JSON.stringify(res));
+                return cb(null,JSON.stringify(res));
             });
         }
     });
@@ -580,15 +557,14 @@ function editDiseaseExtra(arrData,fun){
  * @service
  * @author zhoujf
  * @param {json} arrData -传递的参数，json字符串形式
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function addDiseaseExtra(arrData,fun){
+function addDiseaseExtra(arrData,cb){
     arrData = JSON.parse(arrData);
     arrData = arrData || {};
     if(public_fun.isEmptyObject(arrData)){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     var secret = arrData.secret;
     delete arrData.secret;
@@ -596,8 +572,7 @@ function addDiseaseExtra(arrData,fun){
     var res = {};
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 
     arrData.class_name = (arrData.class_name || "").trim();
@@ -605,8 +580,7 @@ function addDiseaseExtra(arrData,fun){
 	arrData.class1 = parseInt(arrData.class1 || 0);
     if(arrData.class_name === "" || arrData.disease_id === 0 || arrData.class1 === 0){
         res = {"code":40004,"msg":"缺少参数"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 	arrData.class2 = parseInt(arrData.class2 || 0);
 	arrData.content = (arrData.content || "").trim();
@@ -623,8 +597,7 @@ function addDiseaseExtra(arrData,fun){
 		var ckres = check.toJSON();
         if(ckres.length > 0){
             res = {"code":40003,"msg":"栏目已存在"};
-            fun(JSON.stringify(res));
-            return false;
+            return cb(null,JSON.stringify(res));
         }else{
 			if(arrData.class2){
 				if(!arrData.sort){
@@ -637,7 +610,7 @@ function addDiseaseExtra(arrData,fun){
 					}else{
 						res = {"code":40010,"msg":"失败"};
 					}
-					fun(JSON.stringify(res));
+					return cb(null,JSON.stringify(res));
 				});
 				return false;
 			}else{	
@@ -659,7 +632,7 @@ function addDiseaseExtra(arrData,fun){
 							}else{
 								res = {"code":40010,"msg":"失败"};
 							}
-							fun(JSON.stringify(res));
+							return cb(null,JSON.stringify(res));
 						});
 						return false;
 					}else{
@@ -674,7 +647,7 @@ function addDiseaseExtra(arrData,fun){
 							}else{
 								res = {"code":40010,"msg":"失败"};
 							}
-							fun(JSON.stringify(res));
+							return cb(null,JSON.stringify(res));
 						});
 					}
 				});
@@ -690,15 +663,14 @@ function addDiseaseExtra(arrData,fun){
  * @service
  * @author zhoujf
  * @param {json} arrData -传递的参数，json字符串形式
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function getDiseaseExtraContent(arrData,fun){
+function getDiseaseExtraContent(arrData,cb){
     arrData = JSON.parse(arrData);
     arrData = arrData || {};
     if(public_fun.isEmptyObject(arrData)){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
     var secret = arrData.secret,disease_id = arrData.disease_id,class1 = arrData.class1,class2 = arrData.class2;
 
@@ -706,8 +678,7 @@ function getDiseaseExtraContent(arrData,fun){
     var res = {};
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 	
     disease_id = parseInt(disease_id || 0);
@@ -715,8 +686,7 @@ function getDiseaseExtraContent(arrData,fun){
 	class2 = parseInt(class2 || 0);
     if(disease_id === 0 || class2 === 0){
         res = {"code":40004,"msg":"缺少参数"};
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 	
 	var field = ["*"];
@@ -734,12 +704,12 @@ function getDiseaseExtraContent(arrData,fun){
 		var data = info.toJSON();
 		
 		res = {"code":40000,"msg":"成功","data":data};
-		fun(JSON.stringify(res));
+		return cb(null,JSON.stringify(res));
 
 	})
 	.catch(function (err) {
 			res = {"code":40001,"msg":"没有数据","err":err};
-			fun(JSON.stringify(res));
+			return cb(null,JSON.stringify(res));
 		}); 
     console.log(new Date().getTime());
 }
@@ -751,15 +721,15 @@ function getDiseaseExtraContent(arrData,fun){
  * @service
  * @author echo
  * @param {json} arrData -传递的参数，json字符串形式
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function getDiseaseRandId(arrData,fun){
+function getDiseaseRandId(arrData,cb){
     var res = {};
     arrData = JSON.parse(arrData);
     arrData = arrData || {};
     if(public_fun.isEmptyObject(arrData)){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
+        return cb(null,JSON.stringify(res));
     }
     var secret = arrData.secret,status = arrData.status,extra_status = arrData.extra_status;
     delete arrData.secret;
@@ -772,18 +742,17 @@ function getDiseaseRandId(arrData,fun){
     //验证接口是否授权，密钥等信息
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 	 new db.query("select id from yxw_general_disease where "+where+" order by rand() LIMIT 1").then(function(data){
 		var datas= data[0];
 		console.log(datas);
         if(datas.length > 0){
             res = {"code":40000,"msg":"成功","data":datas[0]};
-            fun(JSON.stringify(res));
+            return cb(null,JSON.stringify(res));
         }else{
             res = {"code":40001,"msg":"没有数据"};
-            fun(JSON.stringify(res));
+            return cb(null,JSON.stringify(res));
         }
 	})
 	console.log(new Date().getTime());
@@ -794,38 +763,37 @@ function getDiseaseRandId(arrData,fun){
  * @service
  * @author zhouf
  * @param {json} arrData -传递的参数，json字符串形式
- * @param {callback} fun - 回调方法
+ * @param {callback} cb - 回调方法
  */
-function editDiseaseStatus(arrData,fun){
+function editDiseaseStatus(arrData,cb){
     var res = {};
     arrData = JSON.parse(arrData);
     arrData = arrData || {};
     if(public_fun.isEmptyObject(arrData)){
         res = {"code":40004,"msg":"参数错误"};
-        fun(JSON.stringify(res));
+        return cb(null,JSON.stringify(res));
     }
     var secret = arrData.secret,disease_id = arrData.id,status = arrData.status,extra_status = arrData.extra_status;
     delete arrData.secret;
 	delete arrData.id;
 	if( (typeof(extra_status) === 'undefined' && typeof(extra_status) === 'undefined') || !disease_id){
 		res = {"code":40004,"msg":"缺少必要参数"};
-        fun(JSON.stringify(res));
+        return cb(null,JSON.stringify(res));
 	}
     //验证接口是否授权，密钥等信息
     res = public_fun.check_s(secret);
     if(res.code != 40000){
-        fun(JSON.stringify(res));
-        return false;
+        return cb(null,JSON.stringify(res));
     }
 	 new db.YxwGeneralDisease({id:disease_id}).save(arrData, {patch: true}).then(function(model){
 		var info = model.toJSON();
 		console.log(info);
         if(info){
             res = {"code":40000,"msg":"成功","data":info};
-            fun(JSON.stringify(res));
+            return cb(null,JSON.stringify(res));
         }else{
             res = {"code":40001,"msg":"失败"};
-            fun(JSON.stringify(res));
+            return cb(null,JSON.stringify(res));
         }
 	})
 	console.log(new Date().getTime());
