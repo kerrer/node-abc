@@ -7,6 +7,7 @@
     "start": "node ./bin/app"
   },
   "dependencies": {
+    "bluebird": "^3.1.1",
     "commander": "^2.9.0",
     "config": "kerrer/nodejs-config",
     "db": "kerrer/nodejs-db",
@@ -14,9 +15,9 @@
     "exception": "kerrer/nodejs-exception",
     "forever": "^0.15.1",
     "ip": "^1.1.0",
+    "lodash": "^3.10.1",
     "log": "kerrer/nodejs-log",
     "service": "kerrer/nodejs-services",
-    "start-stop-daemon": "^0.1.1",
     "string": "^3.3.1"
   },
   "devDependencies": {

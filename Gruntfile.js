@@ -30,7 +30,7 @@ module.exports = function(grunt) {
     	    },
     	    files: [
     	      {expand: true, cwd: 'target/services', src: ['**'], dest: '<%= pkg.name %>/services/'}, 
-    	      {expand: true, cwd: 'bin', src: ['start'], dest: '<%= pkg.name %>/bin/', filter: 'isFile'}, 
+    	      {expand: true, cwd: 'bin', src: ['**'], dest: '<%= pkg.name %>/bin/'}, 
     	      {expand: true, cwd: '.', src: ['package.json'], dest: '<%= pkg.name %>/', filter: 'isFile'},
     	    ]
     	  }

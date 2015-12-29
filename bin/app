@@ -10,20 +10,16 @@ var fs =  require('fs'),
 	S = require('string'),
 	grunt = require('grunt'),
     watch = require('watch');
+var _ = require('lodash');
 var program = require('commander');
 var forever = require('forever');
 var detect = require('detect-port');
 var  ip = require('ip');
 var fork = require('child_process').fork, grunt_child;
 
-var Service,pkg;
-
-fs.readFile('package.json', function (err, data) {
-			if (err) throw err;
-			pkg= JSON.parse(data);
-});
-
-forever.load({root:path.join(process.env.PWD,'.forever'),debug:false});
+var Service;
+var pkg= JSON.parse(fs.readFileSync('package.json'));
+forever.load({root:path.join(process.env.PWD,'.forever'),debug:true});
 
 var env = process.env.NODE_ENV = process.env.NODE_ENV || "development";
 process.env.CONF_DIR= path.resolve(env === "production" ?  __dirname + "/../services" : __dirname + "/../target/services" );
@@ -33,6 +29,13 @@ program
 	.version('0.0.1');
 
 if(S(process.env._).endsWith('node') || S(process.env._).endsWith('app')){
+	var cmdValue;
+	 program
+		.arguments('<cmd> [otherOpts...]')
+		.action(function (cmd, otherOpts) {
+			cmdValue = cmd;
+		});
+		
 	program
 		.command('start')
 		.description('启动服务')
@@ -40,19 +43,21 @@ if(S(process.env._).endsWith('node') || S(process.env._).endsWith('app')){
 		.option('-h, --host [host]', '服务绑定的ip地址',ip.address())
 		.option('-eh, --etcd_host [etcd_host]', '注册中心ip地址','127.0.0.1')
 		.option('-ep, --etcd_port [etcd_port]', '注册中心连接端口','4001')
-		.option('-t, --thread [thread]', '运行的线程数')
+		.option('-t, --thread [thread]', '运行的线程数',1)
 		.option('-d, --deamon', '开始deamon运行')
 		.option('-w, --watch', '自动构建源码')
 		.option('-c, --cheese [type]', 'Add the specified type of cheese [marble]', 'marble')
 		.action(function(options){
+			cmdValue="start";
 			console.log('服务启动中....................');
 			start(options);
 		});
-
+   
 	program
 		.command('shutdown')
 		.description('停止服务')
 		.action(function(){		
+			cmdValue="shutdown";
 			shutdown();
 		});
 
@@ -65,9 +70,16 @@ if(S(process.env._).endsWith('node') || S(process.env._).endsWith('app')){
 	});
 	
 	program.parse(process.argv);
-	if(process.argv.length === 2){
+
+	if (typeof cmdValue === 'undefined') {
 		program.help();
+		process.exit(1);
 	}
+	if (_.indexOf(['start','shutdown'], cmdValue)===-1) {
+		console.log(cmdValue,': 没有此命令或该命令无法识别，请使用‘bin/app --help’获取帮助');
+		process.exit(1);
+	}
+
 }else{
 	program
 		.option('-p, --port [port]', '服务运行端口','5004')
@@ -80,34 +92,42 @@ if(S(process.env._).endsWith('node') || S(process.env._).endsWith('app')){
 	start(program);	
 }
 
-function start(options){	
+function start(options){
 	var port = options.port;
 	var host =options.host;
 	var etcd_host=options.etcd_host;
 	var etcd_port=options.etcd_port;
 	var tvs=options.thread;
-	var deamon=options.deamon;
+	var run_deamon=options.deamon;
 	var watch=options.watch;
     var promisePort = detect(port);
     var name=pkg.name;
+
     promisePort.then(function(_port) {
 		if (port !== _port) {
 			console.log('服务端口:%d已被占用, 可以试用端口: %d', port, _port);
 			return;
 		}
 		console.log("使用注册中心:",etcd_host,etcd_port);		
-
 		switch (true){
 			case process.env.pmx || S(process.env._).endsWith('pm2'):
 				require('services')(etcd_port,etcd_host).server(port,program.host).start(name,true);break;
 			case S(process.env._).endsWith('node'):
 			case S(process.env._).endsWith('app'):
-				if(deamon){		   
-					forever.startDaemon(__dirname+'/services.js',{
-						max: 3,
-						silent: true,
-						'env': { 'port': port,'host':host, 'etcd_host':etcd_host, 'etcd_port':etcd_port,'project_name':name}
-					});
+				if(run_deamon){
+					var compiled=_.template("require('services')(<%= etcd_port %>,'<%= etcd_host %>').config({instances:<%= instances %>}).server(<%= port %>,'<%= host %>').start('<%= name %>');");
+					var deamon_content = compiled({ 'port': port,'host':host, 'etcd_host':etcd_host, 'etcd_port':etcd_port,'name':name,'instances':tvs});
+					var deamon_file=path.join(__dirname,'..','.forever' , name +'.js');
+					fs.writeFile(deamon_file, deamon_content,'utf8', function (err) {
+						if (err) {
+							console.log("file error");
+							throw err;
+						}
+						forever.startDaemon(deamon_file,{
+							max: 3,
+							silent: true
+						});
+					});					
 				}else{
 					run_cli();
 					Service = require('services')(etcd_port,etcd_host);						
