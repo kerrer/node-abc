@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "startwww": "node ./bin/www",
-    "start": "node ./bin/app"
+    "start": "node ./bin/app",
+    "preinstall": "node ./bin/install"
   },
   "dependencies": {
     "bluebird": "^3.1.1",

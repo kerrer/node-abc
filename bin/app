@@ -19,7 +19,7 @@ var fork = require('child_process').fork, grunt_child;
 
 var Service;
 var pkg= JSON.parse(fs.readFileSync('package.json'));
-forever.load({root:path.join(process.env.PWD,'.forever'),debug:true});
+forever.load({root:path.join(process.env.PWD,'.forever'),debug:false});
 
 var env = process.env.NODE_ENV = process.env.NODE_ENV || "development";
 process.env.CONF_DIR= path.resolve(env === "production" ?  __dirname + "/../services" : __dirname + "/../target/services" );
@@ -86,7 +86,7 @@ if(S(process.env._).endsWith('node') || S(process.env._).endsWith('app')){
 		.option('-h, --host [host]', '服务绑定的ip地址',ip.address())
 		.option('-eh, --etcd_host [etcd_host]', '注册中心ip地址','127.0.0.1')
 		.option('-ep, --etcd_port [etcd_port]', '注册中心连接端口','4001')
-		.option('-t, --thread [thread]', '运行的线程数')
+		.option('-t, --thread [thread]', '运行的线程数',1)
 		.parse(process.argv);
 	
 	start(program);	
