@@ -1,10 +1,9 @@
 /node_modules/*
 !/node_modules/README.md
-/target/*
+target
 .project
-.project
-.settings/*
-/**/*.log
+.settings
 .nide
-*.zip
 .forever
+logs
+.tmp

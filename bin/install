@@ -3,7 +3,7 @@
 var os=require('os');
 var exec = require('child_process').exec;
 
-var mods={'weak':'kerrer/node-weak','deasync':'kerrer/deasync'};
+var mods={'weak':'kerrer/weak','deasync':'kerrer/deasync'};
 if(os.platform() === 'win32'){
 	for(var mod in mods){
 		exec('npm install '+ winMods[mod]).stderr.pipe(process.stderr);

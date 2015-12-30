@@ -1,35 +1,31 @@
 #!/usr/bin/env node
 /*
+ * NODE_ENV=production
  * node bin/app -p 5555 -d
- * forever start -a -d bin/app -p 5555
- * pm2 start bin/app -- -p 5555
+ * forever start -a -d bin/app -p 5555 | forever stop bin/app
+ * pm2 start bin/app -- -p 5555 | pm2 stop app | pm2 delete app
  */
  
 var fs =  require('fs'),
     path = require('path'),
 	S = require('string'),
-	grunt = require('grunt'),
-    watch = require('watch');
-var _ = require('lodash');
-var program = require('commander');
-var forever = require('forever');
-var detect = require('detect-port');
-var  ip = require('ip');
-var fork = require('child_process').fork, grunt_child;
+	_ = require('lodash'),
+	program = require('commander'),	
+	detect = require('detect-port'),
+	ip = require('ip');
+var env = process.env.NODE_ENV = process.env.NODE_ENV || "development";
+var run = process.env._.substr(process.env._.lastIndexOf('/')+1);	
 
 var Service;
-var pkg= JSON.parse(fs.readFileSync('package.json'));
-forever.load({root:path.join(process.env.PWD,'.forever'),debug:false});
 
-var env = process.env.NODE_ENV = process.env.NODE_ENV || "development";
 process.env.CONF_DIR= path.resolve(env === "production" ?  __dirname + "/../services" : __dirname + "/../target/services" );
 process.env.SVR_DIR = path.resolve(env === "production" ?  __dirname + "/../services" : __dirname + "/../target/services" );
 
 program
 	.version('0.0.1');
 
-if(S(process.env._).endsWith('node') || S(process.env._).endsWith('app')){
-	var cmdValue;
+if(run === 'node' || run === 'app'){
+	 var cmdValue;
 	 program
 		.arguments('<cmd> [otherOpts...]')
 		.action(function (cmd, otherOpts) {
@@ -41,11 +37,12 @@ if(S(process.env._).endsWith('node') || S(process.env._).endsWith('app')){
 		.description('启动服务')
 		.option('-p, --port [port]', '服务运行端口','5004')
 		.option('-h, --host [host]', '服务绑定的ip地址',ip.address())
-		.option('-eh, --etcd_host [etcd_host]', '注册中心ip地址','127.0.0.1')
-		.option('-ep, --etcd_port [etcd_port]', '注册中心连接端口','4001')
-		.option('-t, --thread [thread]', '运行的线程数',1)
-		.option('-d, --deamon', '开始deamon运行')
-		.option('-w, --watch', '自动构建源码')
+		.option('-H, --etcd_host [etcd_host]', '注册中心ip地址','127.0.0.1')
+		.option('-P, --etcd_port [etcd_port]', '注册中心连接端口','4001')
+		.option('-t, --threads [threads]', '运行的线程数',1)
+		.option('-T, --enableThreads', '强制开启多线程',false)
+		.option('-d, --deamon', '开始deamon运行',false)
+		.option('-w, --watch', '自动构建源码',false)
 		.option('-c, --cheese [type]', 'Add the specified type of cheese [marble]', 'marble')
 		.action(function(options){
 			cmdValue="start";
@@ -54,10 +51,10 @@ if(S(process.env._).endsWith('node') || S(process.env._).endsWith('app')){
 		});
    
 	program
-		.command('shutdown')
+		.command('stop')
 		.description('停止服务')
 		.action(function(){		
-			cmdValue="shutdown";
+			cmdValue="stop";
 			shutdown();
 		});
 
@@ -75,8 +72,8 @@ if(S(process.env._).endsWith('node') || S(process.env._).endsWith('app')){
 		program.help();
 		process.exit(1);
 	}
-	if (_.indexOf(['start','shutdown'], cmdValue)===-1) {
-		console.log(cmdValue,': 没有此命令或该命令无法识别，请使用‘bin/app --help’获取帮助');
+	if (_.indexOf(['start','stop'], cmdValue)===-1) {
+		console.log(cmdValue,':没有此命令或该命令无法识别，请使用‘bin/app --help’获取帮助');
 		process.exit(1);
 	}
 
@@ -84,80 +81,54 @@ if(S(process.env._).endsWith('node') || S(process.env._).endsWith('app')){
 	program
 		.option('-p, --port [port]', '服务运行端口','5004')
 		.option('-h, --host [host]', '服务绑定的ip地址',ip.address())
-		.option('-eh, --etcd_host [etcd_host]', '注册中心ip地址','127.0.0.1')
-		.option('-ep, --etcd_port [etcd_port]', '注册中心连接端口','4001')
-		.option('-t, --thread [thread]', '运行的线程数',1)
+		.option('-H, --etcd_host [etcd_host]', '注册中心ip地址','127.0.0.1')
+		.option('-P, --etcd_port [etcd_port]', '注册中心连接端口','4001')
+		.option('-t, --threads [threads]', '运行的线程数',1)
+		.option('-T, --enableThreads', '强制开启多线程',false)
 		.parse(process.argv);
 	
 	start(program);	
 }
 
 function start(options){
-	var port = options.port;
-	var host =options.host;
-	var etcd_host=options.etcd_host;
-	var etcd_port=options.etcd_port;
-	var tvs=options.thread;
-	var run_deamon=options.deamon;
-	var watch=options.watch;
-    var promisePort = detect(port);
-    var name=pkg.name;
+	var opts ={};	
+	opts.port = options.port;
+	opts.host =options.host;
+	opts.etcd_host=options.etcd_host;
+	opts.etcd_port=options.etcd_port;
+	opts.instances = env === "production" || options.enableThreads ? options.threads : 1;
+	
+	var pkg= JSON.parse(fs.readFileSync('package.json'));
+	opts.name = pkg.name;
+	
+	var is_watch= env === "production" ? false : options.watch;
 
-    promisePort.then(function(_port) {
-		if (port !== _port) {
-			console.log('服务端口:%d已被占用, 可以试用端口: %d', port, _port);
+    detect(opts.port).then(function(_port) {
+		if (opts.port !== _port) {
+			console.log('服务端口:%d已被占用, 可以试用端口: %d', opts.port, _port);
 			return;
 		}
-		console.log("使用注册中心:",etcd_host,etcd_port);		
-		switch (true){
-			case process.env.pmx || S(process.env._).endsWith('pm2'):
-				require('services')(etcd_port,etcd_host).server(port,program.host).start(name,true);break;
-			case S(process.env._).endsWith('node'):
-			case S(process.env._).endsWith('app'):
-				if(run_deamon){
-					var compiled=_.template("require('services')(<%= etcd_port %>,'<%= etcd_host %>').config({instances:<%= instances %>}).server(<%= port %>,'<%= host %>').start('<%= name %>');");
-					var deamon_content = compiled({ 'port': port,'host':host, 'etcd_host':etcd_host, 'etcd_port':etcd_port,'name':name,'instances':tvs});
-					var deamon_file=path.join(__dirname,'..','.forever' , name +'.js');
-					fs.writeFile(deamon_file, deamon_content,'utf8', function (err) {
-						if (err) {
-							console.log("file error");
-							throw err;
-						}
-						forever.startDaemon(deamon_file,{
-							max: 3,
-							silent: true
-						});
-					});					
-				}else{
-					run_cli();
-					Service = require('services')(etcd_port,etcd_host);						
-					if(env === "production"){
-						Service.config({instances:tvs})
-					}else{
-						watch  ? watch_build() :null;							
-					}
-		
-					Service.server(port,host).start(name);
-				}
+		console.log("使用注册中心:",opts.etcd_host,opts.etcd_port);		
+		switch (run){
+			case 'pm2':
+				opts.instances = 1;
+			case 'forever':
+				node(opts)
 				break;
-			case S(process.env._).endsWith('forever'):
-				require('services')(etcd_port,etcd_host).config({instances:tvs}).server(port,host).start(name);
-				break;
+			case 'node':
+			case 'app':
+				options.deamon ? forever('start',opts) : node(opts,true,is_watch);
+				break;			
 			default:
 				break;
-		}//switch		
+		}//switch	
 	});//promisePort
 }
 
 function shutdown(){
 	console.log('服务停止中....................');
-	forever.stop();
-}
-
-function stop(){
-   setTimeout(function() {
-     Service.stop();	
-   }, 3000);      
+	forever('stop');
+	console.log('服务已停止！');
 }
 
 function reload(){
@@ -194,7 +165,21 @@ function normalizePort(val) {
 	  return false;
 }
 
-function run_cli(){
+function node(options,is_cli,is_watch){	
+	Service = require('services')(options.etcd_port,options.etcd_host);
+	Service
+		.config({instances:options.instances})
+		.server(options.port,options.host)
+		.start(options.name)
+		.then(function(){				
+			is_watch ? watch() :null;
+			is_cli ? cli(options.name) : null;
+		},function(){
+			
+		});								
+}
+
+function cli(prompt){
 	process.on('uncaughtException', function(err) {
 		console.log('Caught exception: ' + err.message,err.stack);
 	});
@@ -218,25 +203,77 @@ function run_cli(){
 		unhandledRejections.delete(p);
 	});
 	
-	if (process.platform === "win32") {
-		var rl = require("readline").createInterface({
-			input: process.stdin,
-			output: process.stdout
-		});
-
-		rl.on("SIGINT", function () {
-			process.emit("SIGINT");
-		});
-	}
-
 	process.on("SIGINT", function () {
-		console.log('shutdown');
 		process.exit();
 	});
+	
+	var tip="输入命令";
+	var readline = require('readline'),
+    rl = readline.createInterface(process.stdin, process.stdout);
+	rl.setPrompt(prompt + '> ');
+	rl.prompt();
+	rl.on('line', function(line) {
+		switch(line.trim()) {
+			case 'reload':
+				
+				break;
+			case 'restart':
+				
+				break;
+			case 'shutdown':
+				process.emit("SIGINT");
+				break;
+			case '':
+				console.log('请输入help来获取帮助');
+				break;
+			case 'help':
+				
+				break;
+			default:
+				console.log('无法识别 `' + line.trim() + '`, 请输入help来获取帮助');
+				break;
+		}
+		rl.prompt();
+	}).on('close', function() {
+		process.emit("SIGINT");
+	});	
 }
 
-function watch_build(){
-	grunt_child = fork(__dirname+'/grunt.js');
+function forever(action,options){
+	var forever = require('forever');
+	forever.load({root:path.join(process.env.PWD,'.forever'),debug:false});
+	if(action === 'stop'){
+		forever.stop();
+	}else if(action === 'start'){
+		var compiled=_.template("require('services')(<%= etcd_port %>,'<%= etcd_host %>').config({instances:<%= instances %>}).server(<%= port %>,'<%= host %>').start('<%= name %>');");
+		var deamon_content = compiled(options);
+		var deamon_file=path.join(__dirname,'..','.forever' , options.name +'.js');
+		fs.writeFile(deamon_file, deamon_content,'utf8', function (err) {
+			if (err) {
+				console.log("file error");
+				throw err;
+			}
+			forever.startDaemon(deamon_file,{
+				max: 3,
+				silent: true
+			});
+		});	
+	}	
+}
+
+function watch(){
+	var fork = require('child_process').fork;
+	var grunt = require('grunt');
+    var watch = require('watch');
+	var grunt_child = fork(__dirname+'/grunt.js');
+	var rebuild = function(file){
+		if(S(file).startsWith("src/test")){
+			grunt_child.send({type:'test',data:'rebuild'});
+		}else{
+			grunt_child.send({type:'main',data:'rebuild'});
+		}
+	};
+	 
 	grunt_child.on('message',function(obj){
 		if(obj.type && obj.type==='grunt'){
 			if(obj.data && obj.data==="reload"){
@@ -244,8 +281,8 @@ function watch_build(){
 			}
 		}
 	});
+	
 	//grunt_child.send({type:'main',data:'newbuild'});
-
 	watch.watchTree('./src', function (f, curr, prev) {
 		if (typeof f == "object" && prev === null && curr === null) {
 			console.log("watching.........................");
@@ -262,10 +299,4 @@ function watch_build(){
 	});	
 }
 
-function rebuild(file){
-    if(S(file).startsWith("src/test")){
-		  grunt_child.send({type:'test',data:'rebuild'});
-	}else{
-		  grunt_child.send({type:'main',data:'rebuild'});
-	}
-}
+
