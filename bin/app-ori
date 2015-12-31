@@ -9,6 +9,7 @@
 var fs =  require('fs'),
     path = require('path'),
 	S = require('string'),
+	_ = require('lodash'),
 	program = require('commander'),	
 	detect = require('detect-port'),
 	ip = require('ip');
@@ -71,7 +72,7 @@ if(run === 'node' || run === 'app'){
 		program.help();
 		process.exit(1);
 	}
-	if (cmdValue !=='start' && cmdValue !=='stop') {
+	if (_.indexOf(['start','stop'], cmdValue)===-1) {
 		console.log(cmdValue,':没有此命令或该命令无法识别，请使用‘bin/app --help’获取帮助');
 		process.exit(1);
 	}
@@ -165,12 +166,17 @@ function normalizePort(val) {
 }
 
 function node(options,is_cli,is_watch){	
-	Service = require('services')(options.etcd_port,options.etcd_host)
-				.config({instances:options.instances})
-				.server(options.port,options.host);
-	Service.on('error',function(error){ console.log(error);});
-	Service.on('done',function(s){console.log(s);});
-	Service.emit('start',options.name);							
+	Service = require('services')(options.etcd_port,options.etcd_host);
+	Service
+		.config({instances:options.instances})
+		.server(options.port,options.host)
+		.start(options.name)
+		.then(function(){				
+			is_watch ? watch() :null;
+			is_cli ? cli(options.name) : null;
+		},function(){
+			
+		});								
 }
 
 function cli(prompt){
@@ -234,11 +240,24 @@ function cli(prompt){
 }
 
 function forever(action,options){
-	var forever = require('services/forever')(options);
+	var forever = require('forever');
+	forever.load({root:path.join(process.env.PWD,'.forever'),debug:false});
 	if(action === 'stop'){
-		forever.shutdown();
+		forever.stop();
 	}else if(action === 'start'){
-		forever.start();
+		var compiled=_.template("require('services')(<%= etcd_port %>,'<%= etcd_host %>').config({instances:<%= instances %>}).server(<%= port %>,'<%= host %>').start('<%= name %>');");
+		var deamon_content = compiled(options);
+		var deamon_file=path.join(__dirname,'..','.forever' , options.name +'.js');
+		fs.writeFile(deamon_file, deamon_content,'utf8', function (err) {
+			if (err) {
+				console.log("file error");
+				throw err;
+			}
+			forever.startDaemon(deamon_file,{
+				max: 3,
+				silent: true
+			});
+		});	
 	}	
 }
 

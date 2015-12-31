@@ -8,15 +8,12 @@
     "preinstall": "node ./bin/install"
   },
   "dependencies": {
-    "bluebird": "^3.1.1",
     "commander": "^2.9.0",
     "config": "kerrer/nodejs-config",
     "db": "kerrer/nodejs-db",
     "detect-port": "^0.1.4",
     "exception": "kerrer/nodejs-exception",
-    "forever": "^0.15.1",
     "ip": "^1.1.0",
-    "lodash": "^3.10.1",
     "log": "kerrer/nodejs-log",
     "service": "kerrer/nodejs-services",
     "string": "^3.3.1"
